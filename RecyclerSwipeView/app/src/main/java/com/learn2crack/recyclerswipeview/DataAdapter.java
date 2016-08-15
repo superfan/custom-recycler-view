@@ -1,18 +1,23 @@
 package com.learn2crack.recyclerswipeview;
 
+import android.graphics.Color;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.TextView;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class DataAdapter extends RecyclerView.Adapter<DataAdapter.ViewHolder> {
-    private ArrayList<String> countries;
+    private List<String> countries;
+    private List<String> removedCountries;
 
-    public DataAdapter(ArrayList<String> countries) {
+    public DataAdapter(List<String> countries) {
         this.countries = countries;
+        this.removedCountries = new ArrayList<>();
     }
 
     @Override
@@ -22,9 +27,46 @@ public class DataAdapter extends RecyclerView.Adapter<DataAdapter.ViewHolder> {
     }
 
     @Override
-    public void onBindViewHolder(ViewHolder viewHolder, int i) {
+    public void onBindViewHolder(ViewHolder viewHolder, final int i) {
+        String country = countries.get(i);
+        viewHolder.tvCountry.setText(country);
 
-        viewHolder.tv_country.setText(countries.get(i));
+        if (removedCountries.contains(country)) {
+            viewHolder.vgBackground.setBackgroundColor(Color.parseColor("#D32F2F"));
+            viewHolder.tvCountry.setVisibility(View.GONE);
+            viewHolder.btnDel.setVisibility(View.VISIBLE);
+            viewHolder.btnDel.setTag(country);
+            viewHolder.btnDel.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Object object = v.getTag();
+                    if (object instanceof String) {
+                        String country = (String)object;
+                        int position = countries.indexOf(country);
+                        removedCountries.remove(country);
+                        countries.remove(country);
+                        notifyItemRemoved(position);
+                    }
+                }
+            });
+
+            viewHolder.btnCancel.setVisibility(View.VISIBLE);
+            viewHolder.btnCancel.setTag(i);
+            viewHolder.btnCancel.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Object object = v.getTag();
+                    if (object instanceof Integer) {
+                        clearItem((int)object);
+                    }
+                }
+            });
+        } else {
+            viewHolder.vgBackground.setBackgroundColor(Color.WHITE);
+            viewHolder.tvCountry.setVisibility(View.VISIBLE);
+            viewHolder.btnDel.setVisibility(View.GONE);
+            viewHolder.btnCancel.setVisibility(View.GONE);
+        }
     }
 
     @Override
@@ -38,16 +80,40 @@ public class DataAdapter extends RecyclerView.Adapter<DataAdapter.ViewHolder> {
     }
 
     public void removeItem(int position) {
-        countries.remove(position);
-        notifyItemRemoved(position);
-        notifyItemRangeChanged(position, countries.size());
+        String country = countries.get(position);
+        if (removedCountries.contains(country)) {
+            return;
+        }
+
+        removedCountries.add(country);
+        notifyItemChanged(position);
     }
+
+    public boolean isRemovedItem(int position) {
+        return removedCountries.contains(countries.get(position));
+    }
+
+    public void clearItem(int position) {
+        String country = countries.get(position);
+        if (removedCountries.contains(country)) {
+            removedCountries.remove(country);
+            notifyItemChanged(position);
+        }
+    }
+
     public class ViewHolder extends RecyclerView.ViewHolder{
-        TextView tv_country;
+        ViewGroup vgBackground;
+        TextView tvCountry;
+        Button btnDel;
+        Button btnCancel;
+
         public ViewHolder(View view) {
             super(view);
 
-            tv_country = (TextView)view.findViewById(R.id.tv_country);
+            vgBackground = (ViewGroup)view.findViewById(R.id.rl_background);
+            tvCountry = (TextView)view.findViewById(R.id.tv_country);
+            btnDel = (Button) view.findViewById(R.id.btn_del);
+            btnCancel = (Button) view.findViewById(R.id.btn_cancel);
         }
     }
 }
